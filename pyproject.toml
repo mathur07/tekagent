@@ -1,0 +1,21 @@
+[project]
+name = "tekagent"
+version = "0.1.0"
+description = "CLI agent platform for Tekton engineers"
+requires-python = ">=3.12"
+dependencies = [
+    "anthropic[vertex]>=0.52.0",
+    "pyyaml>=6.0",
+    "google-auth>=2.0",
+    "claude-agent-sdk>=0.1.77",
+    "fastapi[standard]>=0.115.0",
+    "uvicorn[standard]>=0.30.0",
+    "aiosqlite>=0.22.1",
+]
+
+[project.scripts]
+tekagent = "tekagent.cli:main"
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"

@@ -1,0 +1,15 @@
+services:
+  tekagent:
+    build: .
+    ports:
+      - "8000:8000"
+    volumes:
+      - ./data:/app/data
+      - ~/.config/gh:/root/.config/gh:ro
+      - ~/.config/gcloud:/root/.config/gcloud:ro
+    environment:
+      - GOOGLE_CLOUD_REGION=${GOOGLE_CLOUD_REGION:-global}
+      - TEKAGENT_MODEL=${TEKAGENT_MODEL:-claude-sonnet-4-5}
+      - CLAUDE_CODE_USE_VERTEX=1
+      - ANTHROPIC_VERTEX_REGION=${GOOGLE_CLOUD_REGION:-global}
+    restart: unless-stopped
