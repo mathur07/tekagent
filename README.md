@@ -8,6 +8,8 @@ docker compose up
 
 Open [http://localhost:8000](http://localhost:8000).
 
+![TekAgent Dashboard](docs/screenshot.png)
+
 ## What It Does
 
 - **PR Review** — Agents fetch diffs, post structured reviews with summary, issues, and verdict
