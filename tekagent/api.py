@@ -57,11 +57,19 @@ def _get_config() -> Config:
 async def api_list_agents() -> list[AgentListItem]:
     config = _get_config()
     names = list_agents(config)
+    db = await get_db(config.data_dir)
+    cursor = await db.execute(
+        "SELECT agent_name, MAX(created_at) as last_active "
+        "FROM messages GROUP BY agent_name"
+    )
+    rows = await cursor.fetchall()
+    last_active_map = {row[0]: row[1] for row in rows}
     items = []
     for name in names:
         history_dir = config.data_dir / "agents" / name / "history"
         has_history = history_dir.exists() and any(history_dir.iterdir()) if history_dir.exists() else False
-        items.append(AgentListItem(name=name, has_history=has_history))
+        items.append(AgentListItem(name=name, has_history=has_history, last_active=last_active_map.get(name)))
+    items.sort(key=lambda x: x.last_active or "", reverse=True)
     return items
 
 

@@ -1,6 +1,7 @@
 export interface Agent {
   name: string;
   has_history: boolean;
+  last_active: string | null;
 }
 
 export interface Skill {

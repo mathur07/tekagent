@@ -2,7 +2,9 @@ import { useState, useRef, useEffect } from "react";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 import { useWebSocket } from "../hooks/use-websocket";
+import { useQueryClient } from "@tanstack/react-query";
 import { useModels, useConfig } from "../lib/queries";
+import { queryKeys } from "../lib/api";
 import type { ChatMessage, ToolCallInfo } from "../lib/types";
 
 function ToolCallBlock({ tc }: { tc: ToolCallInfo }) {
@@ -96,8 +98,9 @@ interface ChatPanelProps {
 }
 
 export function ChatPanel({ agentName, initialPrompt, onPromptConsumed, onClose, onDelete }: ChatPanelProps) {
+  const qc = useQueryClient();
   const { messages, isConnected, isGenerating, sendMessage, stopQuery, clearContext } =
-    useWebSocket(agentName);
+    useWebSocket(agentName, () => qc.invalidateQueries({ queryKey: queryKeys.agents }));
   const [input, setInput] = useState("");
   const { data: models = [] } = useModels();
   const { data: configData } = useConfig();

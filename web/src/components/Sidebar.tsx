@@ -1,6 +1,6 @@
 import { useState } from "react";
 import type { Agent } from "../lib/types";
-import { useRunningAgents } from "../lib/queries";
+import { useRunningAgents, useRepos } from "../lib/queries";
 
 interface Props {
   agents: Agent[];
@@ -17,16 +17,18 @@ interface ParsedAgent {
   type: "PR" | "Issue";
   number: number;
   repo: string;
+  last_active: string | null;
 }
 
-function parseAgentName(name: string): ParsedAgent | null {
-  const match = name.match(/^(PR|Issue)-(\d+)-(.+)$/);
+function parseAgentName(agent: Agent): ParsedAgent | null {
+  const match = agent.name.match(/^(PR|Issue)-(\d+)-(.+)$/);
   if (!match) return null;
   return {
-    name,
+    name: agent.name,
     type: match[1] as "PR" | "Issue",
     number: parseInt(match[2], 10),
     repo: match[3],
+    last_active: agent.last_active,
   };
 }
 
@@ -122,8 +124,12 @@ export function Sidebar({
   const [showCreate, setShowCreate] = useState(false);
   const [newName, setNewName] = useState("");
   const { data: runningList = [] } = useRunningAgents();
+  const { data: watchedRepos = [] } = useRepos();
   const runningAgents = new Set(runningList);
   const [collapsedRepos, setCollapsedRepos] = useState<Set<string>>(new Set());
+  const [showArchived, setShowArchived] = useState(false);
+
+  const watchedSlugs = new Set(watchedRepos.map((r) => r.replace("/", "-")));
 
   const handleCreate = () => {
     if (newName.trim()) {
@@ -143,23 +149,35 @@ export function Sidebar({
   };
 
   const repoGroups: Record<string, ParsedAgent[]> = {};
+  const archivedGroups: Record<string, ParsedAgent[]> = {};
   const standalone: Agent[] = [];
 
   for (const agent of agents) {
-    const parsed = parseAgentName(agent.name);
+    const parsed = parseAgentName(agent);
     if (parsed) {
-      if (!repoGroups[parsed.repo]) repoGroups[parsed.repo] = [];
-      repoGroups[parsed.repo].push(parsed);
+      const target = watchedSlugs.has(parsed.repo) ? repoGroups : archivedGroups;
+      if (!target[parsed.repo]) target[parsed.repo] = [];
+      target[parsed.repo].push(parsed);
     } else {
       standalone.push(agent);
     }
   }
 
-  for (const items of Object.values(repoGroups)) {
-    items.sort((a, b) => b.number - a.number);
-  }
+  const sortByLastActive = (a: ParsedAgent, b: ParsedAgent) =>
+    (b.last_active || "").localeCompare(a.last_active || "");
 
-  const repoKeys = Object.keys(repoGroups).sort();
+  for (const items of Object.values(repoGroups)) items.sort(sortByLastActive);
+  for (const items of Object.values(archivedGroups)) items.sort(sortByLastActive);
+
+  const repoLastActive = (repo: string, groups: Record<string, ParsedAgent[]>) =>
+    groups[repo]?.[0]?.last_active || "";
+
+  const repoKeys = Object.keys(repoGroups).sort((a, b) =>
+    repoLastActive(b, repoGroups).localeCompare(repoLastActive(a, repoGroups))
+  );
+  const archivedKeys = Object.keys(archivedGroups).sort((a, b) =>
+    repoLastActive(b, archivedGroups).localeCompare(repoLastActive(a, archivedGroups))
+  );
 
   return (
     <div
@@ -300,6 +318,94 @@ export function Sidebar({
             indent={false}
           />
         ))}
+
+        {/* Archived agents from unwatched repos */}
+        {archivedKeys.length > 0 && (
+          <>
+            <div
+              onClick={() => setShowArchived(!showArchived)}
+              style={{
+                fontSize: 11,
+                fontWeight: 600,
+                color: "var(--text-muted)",
+                textTransform: "uppercase",
+                letterSpacing: "1px",
+                padding: "12px 8px 4px",
+                cursor: "pointer",
+                display: "flex",
+                alignItems: "center",
+                gap: 6,
+                userSelect: "none",
+              }}
+            >
+              <span style={{
+                fontSize: 10,
+                transition: "transform 0.15s",
+                transform: showArchived ? "rotate(0deg)" : "rotate(-90deg)",
+                display: "inline-block",
+              }}>
+                ▼
+              </span>
+              Archived
+              <span style={{ fontSize: 10, fontWeight: 400, textTransform: "none", letterSpacing: 0 }}>
+                ({Object.values(archivedGroups).reduce((s, a) => s + a.length, 0)})
+              </span>
+            </div>
+            {showArchived && archivedKeys.map((repo) => {
+              const items = archivedGroups[repo];
+              const collapsed = collapsedRepos.has(repo);
+              return (
+                <div key={repo} style={{ marginBottom: 4, opacity: 0.6 }}>
+                  <div
+                    onClick={() => toggleRepo(repo)}
+                    style={{
+                      padding: "6px 8px",
+                      cursor: "pointer",
+                      display: "flex",
+                      alignItems: "center",
+                      gap: 6,
+                      borderRadius: 4,
+                      userSelect: "none",
+                    }}
+                  >
+                    <span style={{
+                      fontSize: 10,
+                      color: "var(--text-muted)",
+                      transition: "transform 0.15s",
+                      transform: collapsed ? "rotate(-90deg)" : "rotate(0deg)",
+                      display: "inline-block",
+                    }}>
+                      ▼
+                    </span>
+                    <span style={{
+                      fontSize: 12,
+                      fontWeight: 600,
+                      color: "var(--text-muted)",
+                      overflow: "hidden",
+                      textOverflow: "ellipsis",
+                      whiteSpace: "nowrap",
+                      flex: 1,
+                    }}>
+                      {formatRepo(repo)}
+                    </span>
+                    <span style={{ fontSize: 10, color: "var(--text-muted)" }}>{items.length}</span>
+                  </div>
+                  {!collapsed && items.map((parsed) => (
+                    <AgentRow
+                      key={parsed.name}
+                      label={`${parsed.type} #${parsed.number}`}
+                      isSelected={!showDashboard && selectedAgent === parsed.name}
+                      isRunning={runningAgents.has(parsed.name)}
+                      onSelect={() => onSelectAgent(parsed.name)}
+                      onDelete={() => onDeleteAgent(parsed.name)}
+                      indent
+                    />
+                  ))}
+                </div>
+              );
+            })}
+          </>
+        )}
       </div>
 
       <div style={{ padding: "8px" }}>

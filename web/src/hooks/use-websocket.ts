@@ -1,12 +1,14 @@
 import { useState, useRef, useCallback, useEffect } from "react";
 import type { ChatMessage, ServerFrame, ToolCallInfo } from "../lib/types";
 
-export function useWebSocket(agentName: string | null) {
+export function useWebSocket(agentName: string | null, onActivityChange?: () => void) {
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [isConnected, setIsConnected] = useState(false);
   const [isGenerating, setIsGenerating] = useState(false);
   const wsRef = useRef<WebSocket | null>(null);
   const currentMessageRef = useRef<string>("");
+  const onActivityRef = useRef(onActivityChange);
+  onActivityRef.current = onActivityChange;
 
   useEffect(() => {
     if (!agentName) return;
@@ -145,6 +147,7 @@ export function useWebSocket(agentName: string | null) {
             }
             return prev;
           });
+          onActivityRef.current?.();
           break;
 
         case "error":
@@ -185,6 +188,7 @@ export function useWebSocket(agentName: string | null) {
       if (model) frame.model = model;
 
       wsRef.current.send(JSON.stringify(frame));
+      onActivityRef.current?.();
     },
     []
   );

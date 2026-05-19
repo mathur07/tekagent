@@ -10,6 +10,7 @@ class AgentCreateRequest(BaseModel):
 class AgentListItem(BaseModel):
     name: str
     has_history: bool = False
+    last_active: str | None = None
 
 
 class AgentResponse(BaseModel):
