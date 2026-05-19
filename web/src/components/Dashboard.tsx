@@ -296,9 +296,20 @@ function RepoCard({ data, analysis, onInteract, bookmarks, onToggleBookmark }: {
   const [prSort, setPrSort] = useState<SortMode>("newest");
   const [issueSort, setIssueSort] = useState<SortMode>("newest");
   const [visited, setVisited] = useState<Set<string>>(new Set);
+  const [copiedKey, setCopiedKey] = useState<string | null>(null);
 
   const handleVisit = (url: string) => {
     setVisited((prev) => new Set(prev).add(url));
+  };
+
+  const copyCliCommand = (type: "pr" | "issue", number: number, repo: string) => {
+    const action = type === "pr"
+      ? `Review PR #${number} in ${repo}. Fetch the diff and provide a structured review with summary, issues, and verdict.`
+      : `Analyze issue #${number} in ${repo}. Fetch the details, assess complexity, suggest an approach, and identify files to change.`;
+    navigator.clipboard.writeText(`claude -p "${action}"`);
+    const key = `${type}:${number}`;
+    setCopiedKey(key);
+    setTimeout(() => setCopiedKey(null), 1500);
   };
 
   if (data.error) {
@@ -359,6 +370,13 @@ function RepoCard({ data, analysis, onInteract, bookmarks, onToggleBookmark }: {
                     {bookmarks.has(`${data.repo}:pr:${pr.number}`) ? "★" : "☆"}
                   </button>
                   <button
+                    onClick={(e) => { e.stopPropagation(); copyCliCommand("pr", pr.number, data.repo); }}
+                    style={{ ...interactBtnStyle, color: copiedKey === `pr:${pr.number}` ? "var(--success)" : "var(--text-secondary)" }}
+                    title="Copy CLI command"
+                  >
+                    {copiedKey === `pr:${pr.number}` ? "copied!" : ">_"}
+                  </button>
+                  <button
                     onClick={(e) => { e.stopPropagation(); onInteract({ type: "pr", number: pr.number, repo: data.repo, title: pr.title }); }}
                     style={interactBtnStyle}
                     title="Chat with agent"
@@ -400,6 +418,13 @@ function RepoCard({ data, analysis, onInteract, bookmarks, onToggleBookmark }: {
                     title={bookmarks.has(`${data.repo}:issue:${issue.number}`) ? "Remove bookmark" : "Bookmark"}
                   >
                     {bookmarks.has(`${data.repo}:issue:${issue.number}`) ? "★" : "☆"}
+                  </button>
+                  <button
+                    onClick={(e) => { e.stopPropagation(); copyCliCommand("issue", issue.number, data.repo); }}
+                    style={{ ...interactBtnStyle, color: copiedKey === `issue:${issue.number}` ? "var(--success)" : "var(--text-secondary)" }}
+                    title="Copy CLI command"
+                  >
+                    {copiedKey === `issue:${issue.number}` ? "copied!" : ">_"}
                   </button>
                   <button
                     onClick={(e) => { e.stopPropagation(); onInteract({ type: "issue", number: issue.number, repo: data.repo, title: issue.title }); }}

@@ -89,6 +89,20 @@ function parseAgentLink(name: string): { url: string; label: string } | null {
   return { url: `https://github.com/${owner}/${repo}/${path}/${number}`, label: `#${number}` };
 }
 
+function buildCliCommand(name: string): string | null {
+  const m = name.match(/^(PR|Issue)-(\d+)-(.+)$/);
+  if (!m) return null;
+  const [, type, number, repoSlug] = m;
+  const repoParts = repoSlug.split("-");
+  if (repoParts.length < 2) return null;
+  const owner = repoParts[0];
+  const repo = repoParts.slice(1).join("-");
+  const action = type === "PR"
+    ? `Review PR #${number} in ${owner}/${repo}. Fetch the diff and provide a structured review with summary, issues, and verdict.`
+    : `Analyze issue #${number} in ${owner}/${repo}. Fetch the details, assess complexity, suggest an approach, and identify files to change.`;
+  return `claude -p "${action}"`;
+}
+
 interface ChatPanelProps {
   agentName: string | null;
   initialPrompt?: string | null;
@@ -106,6 +120,7 @@ export function ChatPanel({ agentName, initialPrompt, onPromptConsumed, onClose,
   const { data: configData } = useConfig();
   const [selectedModel, setSelectedModel] = useState<string>("");
   const [confirmDelete, setConfirmDelete] = useState(false);
+  const [copied, setCopied] = useState(false);
   const confirmTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
@@ -160,9 +175,11 @@ export function ChatPanel({ agentName, initialPrompt, onPromptConsumed, onClose,
           <span style={{ fontWeight: 700 }}>{agentName}</span>
           {agentName && (() => {
             const link = parseAgentLink(agentName);
-            return link ? (
-              <a href={link.url} target="_blank" rel="noopener noreferrer" style={{ color: "var(--accent)", fontSize: 12, textDecoration: "none" }} title="Open on GitHub">{link.label} ↗</a>
-            ) : null;
+            const cli = buildCliCommand(agentName);
+            return <>
+              {link && <a href={link.url} target="_blank" rel="noopener noreferrer" style={{ color: "var(--accent)", fontSize: 12, textDecoration: "none" }} title="Open on GitHub">{link.label} ↗</a>}
+              {cli && <button onClick={() => { navigator.clipboard.writeText(cli); setCopied(true); setTimeout(() => setCopied(false), 1500); }} style={{ ...headerBtn, fontSize: 10, padding: "1px 6px", color: copied ? "var(--success)" : "var(--text-secondary)", borderColor: copied ? "var(--success)" : "var(--border)" }} title={cli}>{copied ? "copied!" : ">_ cli"}</button>}
+            </>;
           })()}
           <span style={{
             width: 6, height: 6, borderRadius: "50%",
