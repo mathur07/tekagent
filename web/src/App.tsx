@@ -98,6 +98,8 @@ function App() {
               agentName={selectedAgent}
               initialPrompt={initialPrompt}
               onPromptConsumed={() => setInitialPrompt(null)}
+              onClose={() => { setSelectedAgent(null); setShowDashboard(true); }}
+              onDelete={handleDeleteAgent}
             />
           )}
         </>

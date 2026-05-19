@@ -75,19 +75,35 @@ function MessageBlock({ msg }: { msg: ChatMessage }) {
   );
 }
 
+function parseAgentLink(name: string): { url: string; label: string } | null {
+  const m = name.match(/^(PR|Issue)-(\d+)-(.+)$/);
+  if (!m) return null;
+  const [, type, number, repoSlug] = m;
+  const repoParts = repoSlug.split("-");
+  if (repoParts.length < 2) return null;
+  const owner = repoParts[0];
+  const repo = repoParts.slice(1).join("-");
+  const path = type === "PR" ? "pull" : "issues";
+  return { url: `https://github.com/${owner}/${repo}/${path}/${number}`, label: `#${number}` };
+}
+
 interface ChatPanelProps {
   agentName: string | null;
   initialPrompt?: string | null;
   onPromptConsumed?: () => void;
+  onClose?: () => void;
+  onDelete?: (name: string) => void;
 }
 
-export function ChatPanel({ agentName, initialPrompt, onPromptConsumed }: ChatPanelProps) {
+export function ChatPanel({ agentName, initialPrompt, onPromptConsumed, onClose, onDelete }: ChatPanelProps) {
   const { messages, isConnected, isGenerating, sendMessage, stopQuery, clearContext } =
     useWebSocket(agentName);
   const [input, setInput] = useState("");
   const { data: models = [] } = useModels();
   const { data: configData } = useConfig();
   const [selectedModel, setSelectedModel] = useState<string>("");
+  const [confirmDelete, setConfirmDelete] = useState(false);
+  const confirmTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
   const promptSentRef = useRef<string | null>(null);
@@ -139,6 +155,12 @@ export function ChatPanel({ agentName, initialPrompt, onPromptConsumed }: ChatPa
       }}>
         <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
           <span style={{ fontWeight: 700 }}>{agentName}</span>
+          {agentName && (() => {
+            const link = parseAgentLink(agentName);
+            return link ? (
+              <a href={link.url} target="_blank" rel="noopener noreferrer" style={{ color: "var(--accent)", fontSize: 12, textDecoration: "none" }} title="Open on GitHub">{link.label} ↗</a>
+            ) : null;
+          })()}
           <span style={{
             width: 6, height: 6, borderRadius: "50%",
             background: isConnected ? "var(--success)" : "var(--error)",
@@ -159,11 +181,19 @@ export function ChatPanel({ agentName, initialPrompt, onPromptConsumed }: ChatPa
         </div>
         <div style={{ display: "flex", gap: 8 }}>
           {isGenerating && (
-            <button onClick={stopQuery} style={{ ...headerBtn, color: "var(--error)", borderColor: "var(--error)" }}>
+            <button onClick={stopQuery} style={{ ...headerBtn, color: "#ef4444", borderColor: "#ef4444" }}>
               stop
             </button>
           )}
-          <button onClick={clearContext} style={headerBtn}>clear</button>
+          <button onClick={clearContext} style={{ ...headerBtn, color: "#f59e0b", borderColor: "#f59e0b" }}>clear</button>
+          {onClose && <button onClick={onClose} style={{ ...headerBtn, color: "#3b82f6", borderColor: "#3b82f6" }}>close</button>}
+          {onDelete && agentName && (
+            confirmDelete ? (
+              <button onClick={() => { setConfirmDelete(false); if (confirmTimerRef.current) clearTimeout(confirmTimerRef.current); onDelete(agentName); }} style={{ ...headerBtn, color: "#fff", background: "#ef4444", borderColor: "#ef4444" }}>confirm?</button>
+            ) : (
+              <button onClick={() => { setConfirmDelete(true); confirmTimerRef.current = setTimeout(() => setConfirmDelete(false), 3000); }} style={{ ...headerBtn, color: "#f87171", borderColor: "#f87171" }}>delete</button>
+            )
+          )}
         </div>
       </div>
 
