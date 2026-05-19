@@ -4,7 +4,7 @@ import asyncio
 import json
 import logging
 import os
-import shlex
+
 import uuid
 
 logger = logging.getLogger("tekagent")
@@ -198,89 +198,6 @@ Fetch the issue details and analyze it — complexity, approach, files to change
     return {"agent_name": agent_name, "created": True}
 
 
-@router.post("/interact/terminal")
-async def api_open_terminal(data: dict) -> dict:
-    """Open system terminal with Claude Code for a PR/issue."""
-    import subprocess
-    import stat
-    import tempfile
-
-    config = _get_config()
-    item_type = data.get("type", "pr")
-    number = data.get("number")
-    repo = data.get("repo", "")
-    title = data.get("title", "")
-
-    if item_type == "pr":
-        initial_prompt = f"Review PR #{number} in {repo}. Fetch the diff and provide a structured review with summary, issues found, and verdict."
-    else:
-        initial_prompt = f"Analyze issue #{number} in {repo}. Fetch details, assess complexity, suggest approach, and identify files to change."
-
-    prefix = "PR" if item_type == "pr" else "Issue"
-    work_dir_name = f"{prefix}-{number}-{repo.replace('/', '-')}"
-    work_dir = str(config.data_dir / "terminals" / work_dir_name)
-    os.makedirs(work_dir, exist_ok=True)
-    claude_md = f"""# {item_type.upper()} #{number} — {title}
-
-Repository: {repo}
-
-## On first message
-When the user sends any message (even just "go"), immediately {initial_prompt.lower()}
-
-## Available commands
-- `gh pr view {number} --repo {repo} --json title,body,author,labels,url,changedFiles,reviewDecision,comments`
-- `gh pr diff {number} --repo {repo}`
-- `gh pr checks {number} --repo {repo}`
-- `gh issue view {number} --repo {repo} --json title,body,author,labels,comments,assignees,url`
-"""
-    settings_path = config.data_dir / "settings.json"
-    terminal = "ghostty"
-    terminal_model = ""
-    if settings_path.exists():
-        try:
-            settings = json.loads(settings_path.read_text())
-            terminal = settings.get("terminal", "ghostty")
-            terminal_model = settings.get("terminal_model", "")
-        except (json.JSONDecodeError, ValueError):
-            pass
-
-    with open(os.path.join(work_dir, "CLAUDE.md"), "w") as f:
-        f.write(claude_md)
-
-    script_file = tempfile.NamedTemporaryFile(
-        mode="w", suffix=".sh", delete=False, prefix="tekagent-",
-    )
-    model_flag = f"--model {shlex.quote(terminal_model)}" if terminal_model else ""
-    safe_dir = shlex.quote(work_dir)
-    script_file.write(f"""#!/bin/bash
-cd {safe_dir}
-claude {model_flag} --allowedTools 'Bash(gh *)' 'Bash(git *)' 'Read' 'Glob' 'Grep' 'WebFetch' 'WebSearch'
-""")
-    script_file.close()
-    os.chmod(script_file.name, stat.S_IRWXU)
-
-    terminal_cmds = {
-        "ghostty": ["open", "-na", "Ghostty.app", "--args", "-e", script_file.name],
-        "terminal": ["osascript", "-e", f'tell application "Terminal" to do script "{script_file.name}"'],
-        "iterm": ["osascript", "-e", f'tell application "iTerm2" to create window with default profile command "{script_file.name}"'],
-        "wezterm": ["wezterm", "start", "--", script_file.name],
-        "alacritty": ["open", "-na", "Alacritty.app", "--args", "-e", script_file.name],
-    }
-    cmd = terminal_cmds.get(terminal, terminal_cmds["ghostty"])
-    subprocess.Popen(cmd)
-
-    db = await get_db(config.data_dir)
-    await log_activity(
-        db,
-        action="opened terminal for",
-        repo=repo,
-        item_type=item_type,
-        item_number=number,
-        title=title,
-    )
-
-    return {"terminal": True}
-
 
 # --- Skills endpoints ---
 
@@ -448,7 +365,6 @@ async def api_get_settings() -> dict:
             settings = json.loads(settings_path.read_text())
         except (json.JSONDecodeError, ValueError):
             pass
-    settings.setdefault("terminal", "ghostty")
     return settings
 
 

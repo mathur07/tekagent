@@ -5,12 +5,10 @@ import {
   useRepos,
   useModels,
   useHealth,
-  useSettings,
   useActivity,
   useEvents,
   useUpdateConfig,
   useUpdateRepos,
-  useUpdateSettings,
 } from "../lib/queries";
 
 interface Props {
@@ -18,31 +16,22 @@ interface Props {
   onSetup?: () => void;
 }
 
-const TERMINALS = [
-  { value: "ghostty", label: "Ghostty" },
-  { value: "terminal", label: "Terminal.app" },
-  { value: "iterm", label: "iTerm2" },
-  { value: "wezterm", label: "WezTerm" },
-  { value: "alacritty", label: "Alacritty" },
-];
 
 export function RightPanel({ skills, onSetup }: Props) {
   const { data: config } = useConfig();
   const { data: repos = [] } = useRepos();
   const { data: models = [] } = useModels();
   const { data: health } = useHealth();
-  const { data: settings } = useSettings();
+
   const { data: activity = [] } = useActivity(24);
   const { data: events = [] } = useEvents(20);
   const updateConfig = useUpdateConfig();
   const updateRepos = useUpdateRepos();
-  const updateSettings = useUpdateSettings();
+
 
   const [newRepo, setNewRepo] = useState("");
   const [eventsExpanded, setEventsExpanded] = useState(false);
 
-  const terminal = settings?.terminal || "ghostty";
-  const terminalModel = settings?.terminal_model || "claude-sonnet-4-5";
 
   const parseRepo = (input: string): string => {
     const trimmed = input.trim().replace(/\/+$/, "");
@@ -290,22 +279,6 @@ export function RightPanel({ skills, onSetup }: Props) {
         <div>
           <h3 style={sectionHeader}>Configuration</h3>
           <div style={{ fontSize: 13 }}>
-            <div style={configRow}>
-              <span style={{ color: "var(--text-secondary)" }}>Terminal Model</span>
-              <select
-                value={terminalModel}
-                onChange={(e) => updateSettings.mutate({ terminal_model: e.target.value })}
-                style={selectStyle}
-              >
-                {models.map((m) => (
-                  <option key={m.value} value={m.value}>{m.label}</option>
-                ))}
-              </select>
-            </div>
-            <div style={configRow}>
-              <span style={{ color: "var(--text-secondary)" }}>Terminal</span>
-              <span>{TERMINALS.find((t) => t.value === terminal)?.label || terminal}</span>
-            </div>
             <div style={configRow}>
               <span style={{ color: "var(--text-secondary)" }}>Chat Model</span>
               <select

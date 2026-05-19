@@ -55,15 +55,6 @@ function App() {
   };
 
   const handleInteract = async (req: InteractRequest) => {
-    if (req.terminal) {
-      await fetch("/api/interact/terminal", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(req),
-      });
-      return;
-    }
-
     const res = await fetch("/api/interact", {
       method: "POST",
       headers: { "Content-Type": "application/json" },

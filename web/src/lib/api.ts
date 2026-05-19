@@ -89,8 +89,7 @@ export const fetchProductivity = () => json<any>("/api/productivity");
 // --- Interact ---
 export const interactAgent = (data: { type: string; number: number; repo: string; title: string }) =>
   post<{ agent_name: string; created: boolean }>("/api/interact", data);
-export const interactTerminal = (data: { type: string; number: number; repo: string; title: string }) =>
-  post<{ terminal: boolean }>("/api/interact/terminal", data);
+
 
 // --- Query Keys ---
 export const queryKeys = {

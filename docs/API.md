@@ -96,18 +96,6 @@ Creates a PR/issue-specific agent (e.g. `PR-123-owner-repo`) with context pre-lo
 { "agent_name": "PR-123-owner-repo", "created": true }
 ```
 
-### Open in Terminal
-```
-POST /interact/terminal
-Content-Type: application/json
-
-{ "type": "pr", "number": 123, "repo": "owner/repo", "title": "Fix bug" }
-```
-Opens a system terminal with Claude Code for hands-on PR/issue work.
-```json
-{ "terminal": true }
-```
-
 ---
 
 ## Skills

@@ -287,7 +287,7 @@ export interface InteractRequest {
   number: number;
   repo: string;
   title: string;
-  terminal?: boolean;
+
 }
 
 function RepoCard({ data, analysis, onInteract, bookmarks, onToggleBookmark }: { data: RepoData; analysis?: RepoAnalysis; onInteract: (req: InteractRequest) => void; bookmarks: Set<string>; onToggleBookmark: (repo: string, type: string, num: number, title: string, url: string) => void }) {
@@ -359,16 +359,9 @@ function RepoCard({ data, analysis, onInteract, bookmarks, onToggleBookmark }: {
                     {bookmarks.has(`${data.repo}:pr:${pr.number}`) ? "★" : "☆"}
                   </button>
                   <button
-                    onClick={(e) => { e.stopPropagation(); onInteract({ type: "pr", number: pr.number, repo: data.repo, title: pr.title, terminal: true }); }}
-                    style={terminalBtnStyle}
-                    title="Open in system terminal with Claude Code"
-                  >
-                    &gt;_
-                  </button>
-                  <button
                     onClick={(e) => { e.stopPropagation(); onInteract({ type: "pr", number: pr.number, repo: data.repo, title: pr.title }); }}
                     style={interactBtnStyle}
-                    title="Open in web chat"
+                    title="Chat with agent"
                   >
                     &#x1F4AC;
                   </button>
@@ -409,16 +402,9 @@ function RepoCard({ data, analysis, onInteract, bookmarks, onToggleBookmark }: {
                     {bookmarks.has(`${data.repo}:issue:${issue.number}`) ? "★" : "☆"}
                   </button>
                   <button
-                    onClick={(e) => { e.stopPropagation(); onInteract({ type: "issue", number: issue.number, repo: data.repo, title: issue.title, terminal: true }); }}
-                    style={terminalBtnStyle}
-                    title="Open in system terminal with Claude Code"
-                  >
-                    &gt;_
-                  </button>
-                  <button
                     onClick={(e) => { e.stopPropagation(); onInteract({ type: "issue", number: issue.number, repo: data.repo, title: issue.title }); }}
                     style={interactBtnStyle}
-                    title="Open in web chat"
+                    title="Chat with agent"
                   >
                     &#x1F4AC;
                   </button>
@@ -535,7 +521,7 @@ const sectionTitle: React.CSSProperties = { fontSize: 11, fontWeight: 600, color
 const itemStyle: React.CSSProperties = { display: "flex", alignItems: "center", justifyContent: "space-between", padding: "6px 16px", gap: 12, textDecoration: "none", cursor: "pointer", borderBottom: "1px solid var(--border)" };
 const interactBtnStyle: React.CSSProperties = { background: "var(--bg-tertiary)", border: "1px solid var(--border)", borderRadius: 4, color: "var(--accent)", padding: "2px 8px", cursor: "pointer", fontSize: 11, fontWeight: 600, whiteSpace: "nowrap" };
 const starBtnStyle: React.CSSProperties = { background: "none", border: "none", cursor: "pointer", fontSize: 14, padding: "0 2px", lineHeight: 1 };
-const terminalBtnStyle: React.CSSProperties = { background: "var(--bg-tertiary)", border: "1px solid var(--success)", borderRadius: 4, color: "var(--success)", padding: "2px 8px", cursor: "pointer", fontSize: 11, fontWeight: 600, whiteSpace: "nowrap" };
+
 
 /* ---- Main Dashboard ---- */
 
@@ -742,7 +728,7 @@ export function Dashboard({ onInteract }: { onInteract: (req: InteractRequest) =
                     <div style={{ display: "flex", alignItems: "center", gap: 6, flexShrink: 0 }}>
                       <span style={{ fontSize: 11, color: "var(--text-muted)" }}>{b.repo}</span>
                       <button onClick={() => toggleBookmark(b.repo, b.item_type, b.item_number, b.title, b.url)} style={{ ...starBtnStyle, color: "var(--warning)" }}>★</button>
-                      <button onClick={() => onInteract({ type: b.item_type, number: b.item_number, repo: b.repo, title: b.title, terminal: true })} style={terminalBtnStyle}>&gt;_</button>
+                      <button onClick={() => onInteract({ type: b.item_type, number: b.item_number, repo: b.repo, title: b.title })} style={interactBtnStyle}>&#x1F4AC;</button>
                     </div>
                   </div>
                 ))}
