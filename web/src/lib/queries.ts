@@ -118,7 +118,10 @@ export function useUpdateRepos() {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: (repos: string[]) => api.updateRepos(repos),
-    onSuccess: () => qc.invalidateQueries({ queryKey: api.queryKeys.repos }),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: api.queryKeys.repos });
+      qc.invalidateQueries({ queryKey: api.queryKeys.dashboard, refetchType: "all" });
+    },
   });
 }
 

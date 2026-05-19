@@ -528,7 +528,7 @@ const starBtnStyle: React.CSSProperties = { background: "none", border: "none", 
 export function Dashboard({ onInteract }: { onInteract: (req: InteractRequest) => void }) {
   const [activeTab, setActiveTab] = useState<"repos" | "activity">("repos");
   const { data: models = [] } = useModels();
-  const { data: dashboardData = [], isLoading: loading, refetch: refetchDashboard, dataUpdatedAt } = useDashboard();
+  const { data: dashboardData = [], isLoading: loading, isFetching, refetch: refetchDashboard, dataUpdatedAt } = useDashboard();
   const { data: bookmarkItems = [] } = useBookmarks();
   const toggleBookmarkMut = useToggleBookmark();
   const data = dashboardData as RepoData[];
@@ -654,17 +654,28 @@ export function Dashboard({ onInteract }: { onInteract: (req: InteractRequest) =
             >
               {analyzing ? "Analyzing..." : hasAnalysis ? "Re-analyze" : "Analyze"}
             </button>
-            <button onClick={fetchData} disabled={loading}
+            <button onClick={fetchData} disabled={isFetching}
               style={{
-                background: loading ? "var(--bg-tertiary)" : "var(--accent)", border: "none", borderRadius: 6,
-                color: "#fff", padding: "6px 16px", cursor: loading ? "default" : "pointer", fontSize: 13, fontWeight: 600,
+                background: isFetching ? "var(--bg-tertiary)" : "var(--accent)", border: "none", borderRadius: 6,
+                color: isFetching ? "var(--text-muted)" : "#fff", padding: "6px 16px", cursor: isFetching ? "default" : "pointer", fontSize: 13, fontWeight: 600,
               }}
             >
-              {loading ? "Loading..." : "Refresh"}
+              {isFetching ? "Loading..." : "Refresh"}
             </button>
           </div>
         )}
       </div>
+
+      {/* Loading bar */}
+      {isFetching && !loading && (
+        <div style={{ height: 2, background: "var(--bg-tertiary)", overflow: "hidden" }}>
+          <div style={{
+            height: "100%", width: "40%", background: "var(--accent)",
+            animation: "loadbar 1s ease-in-out infinite",
+          }} />
+          <style>{`@keyframes loadbar { 0% { transform: translateX(-100%); } 100% { transform: translateX(350%); } }`}</style>
+        </div>
+      )}
 
       {/* Activity tab */}
       {activeTab === "activity" && <ProductivityDashboard />}
