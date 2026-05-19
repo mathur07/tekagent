@@ -50,7 +50,7 @@ Flag any string that looks like a secret, even in tests or examples.
 
 ### 4. Injection Risk Analysis
 
-For every input boundary, trace the data flow:
+For every input boundary, trace the data flow across files:
 
 - Does user input reach a shell command? Check for `os/exec`, `subprocess`, backticks.
 - Does user input reach a database query? Check for string concatenation in queries.
@@ -58,7 +58,26 @@ For every input boundary, trace the data flow:
 - Does user input reach HTTP headers or URLs? Check for SSRF and header injection.
 - Are inputs validated and sanitized before use?
 
-### 5. RBAC and Permissions Review
+**Cross-file tracing**: Don't stop at the diff boundary. If the changed code accepts input, follow its flow through the codebase:
+```
+gh api search/code -f q="<function_name> repo:<owner>/<repo>" --jq '.items[].path'
+```
+
+Verify that callers pass sanitized data and that the function doesn't trust its inputs implicitly.
+
+### 5. Dependency Analysis
+
+When new dependencies are added:
+- Check if the package is actively maintained (last commit, open issues)
+- Look for known CVEs or security advisories
+- Verify the package source is trustworthy (not typosquatted)
+- Check if it pulls in excessive transitive dependencies
+
+```
+gh api /repos/<owner>/<dep>/vulnerability-alerts 2>/dev/null
+```
+
+### 6. RBAC and Permissions Review
 
 Check authorization and access control:
 
@@ -68,7 +87,7 @@ Check authorization and access control:
 - Are there any paths that bypass authorization checks?
 - Are role bindings scoped appropriately (namespaced vs. cluster-wide)?
 
-### 6. Tekton-Specific Security Checks
+### 7. Tekton-Specific Security Checks
 
 For tektoncd/* repositories, apply additional scrutiny:
 
@@ -80,7 +99,16 @@ For tektoncd/* repositories, apply additional scrutiny:
 - **Service Account Scope**: Are TaskRuns using service accounts with more permissions than needed?
 - **Result and Workspace Tampering**: Can a malicious step modify results or workspace contents to affect downstream tasks?
 
-### 7. Output Format
+### 8. Confidence Scoring
+
+For each finding, assess confidence before reporting:
+- **High confidence**: clear vulnerability with demonstrable impact — always report
+- **Medium confidence**: suspicious pattern, likely exploitable — report with context
+- **Low confidence**: theoretical risk, defense-in-depth suggestion — report as informational only
+
+Don't pad the report with low-confidence findings to look thorough. Fewer high-quality findings are more useful than many speculative ones.
+
+### 9. Output Format
 
 Structure the review as:
 
@@ -90,11 +118,15 @@ Structure the review as:
 
 For each finding:
 - **Severity**: Critical / High / Medium / Low / Informational
+- **Confidence**: High / Medium / Low
 - **Category**: OWASP category or Tekton-specific
 - **Location**: File and line number
 - **Description**: What the issue is
 - **Impact**: What could go wrong
 - **Recommendation**: How to fix it
+
+**Dependency Report** (if new deps added):
+- Package name, version, maintenance status, known issues
 
 **Summary**:
 - Total findings by severity

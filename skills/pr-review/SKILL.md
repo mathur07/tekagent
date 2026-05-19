@@ -14,11 +14,34 @@ When asked to review a PR, follow these steps:
 Use the gh CLI to fetch PR metadata and diff:
 
 ```
-gh pr view <number> --repo <repo> --json title,body,author,labels,url,changedFiles
+gh pr view <number> --repo <repo> --json title,body,author,labels,url,changedFiles,commits
 gh pr diff <number> --repo <repo>
 ```
 
-### 2. Analyze the Changes
+If the PR references an issue, fetch the issue to verify the changes actually address it:
+
+```
+gh issue view <issue_number> --repo <repo> --json title,body,labels
+```
+
+### 2. Walkthrough Summary
+
+Before diving into line-level comments, produce a brief file-by-file walkthrough:
+- Group changed files by purpose (core logic, tests, config, docs)
+- For each file, one sentence on what changed and why
+- This helps the reviewer (and the PR author) see the full picture before details
+
+### 3. Classify PR Size and Effort
+
+Assign a size label based on the diff:
+- **S** (< 50 lines): trivial fix, typo, config change
+- **M** (50-200 lines): focused feature or bug fix
+- **L** (200-500 lines): multi-file feature, refactor
+- **XL** (500+ lines): large feature, consider suggesting a split
+
+Include estimated review time (5 min / 15 min / 30+ min).
+
+### 4. Analyze the Changes
 
 Look at the diff for real problems:
 - Does the code actually do what the PR claims?
@@ -27,7 +50,33 @@ Look at the diff for real problems:
 - Are there tests for the new/changed behavior?
 - Does this break existing interfaces?
 
-### 3. Tekton-Specific Checks
+### 5. Security-Focused Pass
+
+Run a dedicated security check on the diff, separate from the general review:
+- Hardcoded secrets, API keys, tokens
+- Injection vectors (SQL, command, path traversal, template)
+- Auth/authz bypass paths
+- Sensitive data in logs or error messages
+- Unsafe deserialization or eval
+
+If security issues are found, flag them with high confidence and clear impact.
+
+### 6. Cross-File Dependency Check
+
+Don't just review the diff in isolation:
+- If a function signature changed, check callers (search the repo)
+- If a new dependency is added, check if it's maintained and secure
+- If an API contract changed, verify consumers are updated
+- Trace data flow across file boundaries when the change touches input handling
+
+### 7. Ticket Compliance
+
+If the PR links to an issue or ticket:
+- Verify the changes actually address the issue requirements
+- Flag if the PR scope drifts beyond what the issue describes
+- Note if acceptance criteria from the issue are unmet
+
+### 8. Tekton-Specific Checks
 
 For tektoncd/* repositories:
 - Reconciler patterns: proper status updates, requeue logic
@@ -36,7 +85,16 @@ For tektoncd/* repositories:
 - CRD changes: backward-compatible, with proper validation
 - RBAC: minimal required permissions
 
-### 4. Tone and Style
+### 9. Confidence Filtering
+
+Before posting a comment, gauge your confidence:
+- **High confidence**: clear bug, security issue, broken logic — always post
+- **Medium confidence**: potential issue, worth a second look — post with hedging language
+- **Low confidence**: style preference, uncertain if it matters — skip it
+
+Never post low-confidence comments. Noise erodes trust.
+
+### 10. Tone and Style
 
 Write review comments the way you'd type them in Slack, not the way you'd write a doc:
 - Lowercase is fine, no need for formal capitalization
@@ -51,7 +109,7 @@ Bad: "**Medium — Error Handling**: The `makeHttpClient` function replaces `htt
 
 Good: "small concern with this line — replacing `http.DefaultTransport` directly means anything else that wraps it (instrumentation, a test helper, a proxy wrapper) gets silently overridden. might be worth wrapping the existing transport instead of replacing it."
 
-### 5. Posting Comments
+### 11. Posting Comments
 
 IMPORTANT: Never submit or approve a review. Only create **pending** review comments. The user will go to the GitHub UI to submit the review themselves.
 
@@ -86,11 +144,14 @@ IMPORTANT: Never submit or approve a review. Only create **pending** review comm
 - Do NOT escape backticks in heredocs — they break GitHub rendering
 - Use `cat > /tmp/comment.md << 'EOF'` (quoted EOF prevents shell expansion)
 
-### 6. Summary Format
+### 12. Summary Format
 
-When giving an overall review summary in chat (not a GitHub comment), keep it brief:
+When giving an overall review summary in chat (not a GitHub comment), include:
+- **Size**: S/M/L/XL with estimated review time
+- **Walkthrough**: one-line per changed file grouped by purpose
 - One sentence on what the PR does
 - Call out any concerns in plain language
+- Security findings if any
+- Ticket compliance status if a linked issue exists
 - End with your recommendation: approve, request changes, or just a comment
-- No structured headers or severity tables — just talk like a human
-- The same tone and style rules from section 4 apply everywhere
+- The same tone and style rules from section 10 apply everywhere
