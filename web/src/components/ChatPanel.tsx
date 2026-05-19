@@ -99,7 +99,7 @@ interface ChatPanelProps {
 
 export function ChatPanel({ agentName, initialPrompt, onPromptConsumed, onClose, onDelete }: ChatPanelProps) {
   const qc = useQueryClient();
-  const { messages, isConnected, isGenerating, sendMessage, stopQuery, clearContext } =
+  const { messages, isConnected, isGenerating, historyLoaded, sendMessage, stopQuery, clearContext } =
     useWebSocket(agentName, () => qc.invalidateQueries({ queryKey: queryKeys.agents }));
   const [input, setInput] = useState("");
   const { data: models = [] } = useModels();
@@ -202,7 +202,12 @@ export function ChatPanel({ agentName, initialPrompt, onPromptConsumed, onClose,
 
       {/* Terminal output */}
       <div style={{ flex: 1, overflow: "auto", padding: "12px 16px" }}>
-        {messages.length === 0 && !isGenerating && (
+        {messages.length === 0 && !isGenerating && !historyLoaded && (
+          <div style={{ color: "var(--text-muted)", padding: "40px 0" }}>
+            <div>Loading history...</div>
+          </div>
+        )}
+        {messages.length === 0 && !isGenerating && historyLoaded && (
           <div style={{ color: "var(--text-muted)", padding: "40px 0" }}>
             <div>TekAgent — {agentName}</div>
             <div style={{ marginTop: 4 }}>Type a message to begin.</div>

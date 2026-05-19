@@ -5,6 +5,7 @@ export function useWebSocket(agentName: string | null, onActivityChange?: () => 
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [isConnected, setIsConnected] = useState(false);
   const [isGenerating, setIsGenerating] = useState(false);
+  const [historyLoaded, setHistoryLoaded] = useState(false);
   const wsRef = useRef<WebSocket | null>(null);
   const currentMessageRef = useRef<string>("");
   const onActivityRef = useRef(onActivityChange);
@@ -16,6 +17,7 @@ export function useWebSocket(agentName: string | null, onActivityChange?: () => 
     setMessages([]);
     setIsConnected(false);
     setIsGenerating(false);
+    setHistoryLoaded(false);
     currentMessageRef.current = "";
 
     const protocol = window.location.protocol === "https:" ? "wss:" : "ws:";
@@ -62,11 +64,14 @@ export function useWebSocket(agentName: string | null, onActivityChange?: () => 
               }))
             );
           }
+          setHistoryLoaded(true);
           break;
         }
 
         case "status":
-          if (frame.status === "generating") {
+          if (frame.status === "connected") {
+            setHistoryLoaded(true);
+          } else if (frame.status === "generating") {
             setIsGenerating(true);
             currentMessageRef.current = "";
           } else if (frame.status === "context_cleared") {
@@ -203,5 +208,5 @@ export function useWebSocket(agentName: string | null, onActivityChange?: () => 
     );
   }, []);
 
-  return { messages, isConnected, isGenerating, sendMessage, stopQuery, clearContext };
+  return { messages, isConnected, isGenerating, historyLoaded, sendMessage, stopQuery, clearContext };
 }
