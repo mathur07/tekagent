@@ -501,7 +501,7 @@ function RecentPRRow({ pr }: { pr: PRItem }) {
 /* ---------- Main Dashboard ---------- */
 
 export function ProductivityDashboard() {
-  const { data: rawData, isLoading: loading, isFetching, refetch, error: queryError } = useProductivity();
+  const { data: rawData, isLoading: loading, error: queryError } = useProductivity();
   const data = rawData as ProductivityData | undefined;
   const error = queryError?.message || (rawData as any)?.error || null;
 
@@ -538,29 +538,11 @@ export function ProductivityDashboard() {
           <div style={{ fontSize: 16, fontWeight: 700, color: "var(--text-primary)" }}>{data.profile.name}</div>
           <div style={{ fontSize: 12, color: "var(--text-muted)" }}>@{data.profile.login}</div>
         </div>
-        <div style={{ marginLeft: "auto", display: "flex", alignItems: "center", gap: 12 }}>
-          <div style={{ textAlign: "right" }}>
-            <div style={{ fontSize: 20, fontWeight: 700, color: "var(--success)" }}>
-              {cal?.totalContributions.toLocaleString() || 0}
-            </div>
-            <div style={{ fontSize: 11, color: "var(--text-muted)" }}>contributions this year</div>
+        <div style={{ marginLeft: "auto", textAlign: "right" }}>
+          <div style={{ fontSize: 20, fontWeight: 700, color: "var(--success)" }}>
+            {cal?.totalContributions.toLocaleString() || 0}
           </div>
-          <button
-            onClick={() => refetch()}
-            disabled={isFetching}
-            style={{
-              background: isFetching ? "var(--bg-tertiary)" : "var(--accent)",
-              border: "none",
-              borderRadius: 6,
-              color: isFetching ? "var(--text-muted)" : "#fff",
-              padding: "6px 14px",
-              cursor: isFetching ? "default" : "pointer",
-              fontSize: 12,
-              fontWeight: 600,
-            }}
-          >
-            {isFetching ? "Loading..." : "Refresh"}
-          </button>
+          <div style={{ fontSize: 11, color: "var(--text-muted)" }}>contributions this year</div>
         </div>
       </div>
 

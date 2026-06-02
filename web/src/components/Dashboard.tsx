@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { useModels, useDashboard, useBookmarks, useToggleBookmark } from "../lib/queries";
+import { useModels, useDashboard, useBookmarks, useToggleBookmark, useProductivity } from "../lib/queries";
 import * as api from "../lib/api";
 import { ProductivityDashboard } from "./ProductivityDashboard";
 
@@ -554,6 +554,7 @@ export function Dashboard({ onInteract }: { onInteract: (req: InteractRequest) =
   const [activeTab, setActiveTab] = useState<"repos" | "activity">("repos");
   const { data: models = [] } = useModels();
   const { data: dashboardData = [], isLoading: loading, isFetching, refetch: refetchDashboard, dataUpdatedAt } = useDashboard();
+  const { isFetching: activityFetching, refetch: refetchActivity } = useProductivity();
   const { data: bookmarkItems = [] } = useBookmarks();
   const toggleBookmarkMut = useToggleBookmark();
   const data = dashboardData as RepoData[];
@@ -655,6 +656,16 @@ export function Dashboard({ onInteract }: { onInteract: (req: InteractRequest) =
             <span style={{ fontSize: 12, color: "var(--text-muted)" }}>Updated {lastRefresh.toLocaleTimeString()}</span>
           )}
         </div>
+        {activeTab === "activity" && (
+          <button onClick={() => refetchActivity()} disabled={activityFetching}
+            style={{
+              background: activityFetching ? "var(--bg-tertiary)" : "var(--accent)", border: "none", borderRadius: 6,
+              color: activityFetching ? "var(--text-muted)" : "#fff", padding: "6px 16px", cursor: activityFetching ? "default" : "pointer", fontSize: 13, fontWeight: 600,
+            }}
+          >
+            {activityFetching ? "Loading..." : "Refresh"}
+          </button>
+        )}
         {activeTab === "repos" && (
           <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
             <select
