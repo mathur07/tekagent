@@ -74,11 +74,19 @@ export function useBookmarks() {
 }
 
 export function useProductivity() {
-  return useQuery({
+  const qc = useQueryClient();
+  const query = useQuery({
     queryKey: api.queryKeys.productivity,
-    queryFn: api.fetchProductivity,
+    queryFn: () => api.fetchProductivity(),
     staleTime: 60_000,
   });
+  const forceRefresh = () =>
+    qc.fetchQuery({
+      queryKey: api.queryKeys.productivity,
+      queryFn: () => api.fetchProductivity(true),
+      staleTime: 0,
+    });
+  return { ...query, forceRefresh };
 }
 
 export function useGithubAuthStatus() {

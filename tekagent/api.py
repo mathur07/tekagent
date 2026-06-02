@@ -258,9 +258,9 @@ async def api_dashboard() -> list[dict]:
 
 
 @router.get("/productivity")
-async def api_productivity():
+async def api_productivity(refresh: bool = False):
     from .productivity import fetch_productivity
-    return await fetch_productivity()
+    return await fetch_productivity(force_refresh=refresh)
 
 
 @router.get("/dashboard/search")

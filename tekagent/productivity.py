@@ -261,9 +261,9 @@ async def fetch_dora_metrics(login: str) -> dict:
     }
 
 
-async def fetch_productivity() -> dict:
+async def fetch_productivity(force_refresh: bool = False) -> dict:
     global _cache
-    if _cache and (time.time() - _cache[0]) < _CACHE_TTL:
+    if not force_refresh and _cache and (time.time() - _cache[0]) < _CACHE_TTL:
         return _cache[1]
 
     login = await _get_login()

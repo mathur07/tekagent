@@ -554,7 +554,7 @@ export function Dashboard({ onInteract }: { onInteract: (req: InteractRequest) =
   const [activeTab, setActiveTab] = useState<"repos" | "activity">("repos");
   const { data: models = [] } = useModels();
   const { data: dashboardData = [], isLoading: loading, isFetching, refetch: refetchDashboard, dataUpdatedAt } = useDashboard();
-  const { isFetching: activityFetching, refetch: refetchActivity } = useProductivity();
+  const { isFetching: activityFetching, forceRefresh: refetchActivity } = useProductivity();
   const { data: bookmarkItems = [] } = useBookmarks();
   const toggleBookmarkMut = useToggleBookmark();
   const data = dashboardData as RepoData[];

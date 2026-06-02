@@ -84,7 +84,7 @@ export const removeBookmark = (repo: string, itemType: string, itemNumber: numbe
   fetch(`/api/bookmarks?repo=${encodeURIComponent(repo)}&item_type=${itemType}&item_number=${itemNumber}`, { method: "DELETE" });
 
 // --- Productivity ---
-export const fetchProductivity = () => json<any>("/api/productivity");
+export const fetchProductivity = (refresh = false) => json<any>(`/api/productivity${refresh ? "?refresh=true" : ""}`);
 
 // --- Interact ---
 export const interactAgent = (data: { type: string; number: number; repo: string; title: string }) =>
